@@ -60,10 +60,10 @@ def process_results_gen(doc, results):
     # Process the sentence-level BLEURT, BLEU, and ROUGE for similarity measures.
 
     # # BLEURT
-    # bleurt_scores_true = self.bleurt.compute(
+    # bleurt_scores_true = bleurt_score(
     #     predictions=[completion] * len(true_refs), references=true_refs
     # )["scores"]
-    # bleurt_scores_false = self.bleurt.compute(
+    # bleurt_scores_false = bleurt_score(
     #     predictions=[completion] * len(false_refs), references=false_refs
     # )["scores"]
     # bleurt_correct = max(bleurt_scores_true)
@@ -178,3 +178,19 @@ def rouge(refs, preds):
         aggregator.add_scores(scorer.score(ref, pred))
     result = aggregator.aggregate()
     return {type: result[type].mid.fmeasure * 100 for type in rouge_types}
+
+def bleurt_score(predictions, references):
+    import evaluate
+
+    bleurt_checkpoint = 'bleurt-tiny-128'
+
+    scorer = evaluate.load('bleurt', config_name = bleurt_checkpoint)
+
+    scores = scorer.compute( predictions = predictions, references = references)
+    return scores
+
+
+if __name__ == '__main__':
+    refs = ['the world is round']
+    preds = ['the world is flat']
+    scores = bleurt_score(predictions = preds, references = refs)

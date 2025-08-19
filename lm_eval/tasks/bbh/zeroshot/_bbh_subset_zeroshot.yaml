@@ -1,0 +1,16 @@
+group: bbh_zeroshot_subset
+task:
+  - bbh_zeroshot_boolean_expressions
+  - bbh_zeroshot_causal_judgement
+  # - bbh_zeroshot_dyck_languages
+  - bbh_zeroshot_formal_fallacies
+  - bbh_zeroshot_logical_deduction_five_objects
+  - bbh_zeroshot_navigate
+  - bbh_zeroshot_object_counting
+aggregate_metric_list:
+  - metric: exact_match
+    aggregation: mean
+    weight_by_size: true
+    filter_list: flexible-extract
+metadata:
+  version: 3.0

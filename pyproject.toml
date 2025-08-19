@@ -38,7 +38,7 @@ dependencies = [
     "zstandard",
     "dill",
     "word2number",
-    "more_itertools",
+    "more_itertools"
 ]
 
 [tool.setuptools.packages.find]
@@ -75,6 +75,10 @@ math = ["sympy>=1.12", "antlr4-python3-runtime==4.11", "math_verify[antlr4_11_0]
 multilingual = ["nagisa>=0.2.7", "jieba>=0.42.1", "pycountry"]
 neuronx = ["optimum[neuronx]"]
 optimum = ["optimum[openvino]"]
+ovlm = [    "openvino",
+    "openvino-genai",
+    "openvino-tokenizers",
+    "openvino-telemetry"]
 promptsource = ["promptsource>=0.2.3"]
 ruler = ["nltk", "wonderwords", "scipy"]
 sae_lens = ["sae_lens"]
