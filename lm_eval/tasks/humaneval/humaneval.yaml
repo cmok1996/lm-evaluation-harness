@@ -11,12 +11,12 @@ metric_list:
     higher_is_better: true
     k: [1]
 generation_kwargs:
-  until:
-    - "\nclass"
-    - "\ndef"
-    - "\n#"
-    - "\nif"
-    - "\nprint"
+  # until:
+  #   - "\nclass"
+  #   - "\ndef"
+  #   - "\n#"
+  #   - "\nif"
+  #   - "\nprint"
   max_gen_toks: 1024
   do_sample: false
 repeats: 1

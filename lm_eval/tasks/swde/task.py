@@ -28,7 +28,7 @@ class SWDE(ConfigurableTask):
         return self.dataset["validation"]
 
     def doc_to_text(self, doc):
-        return doc["text"]
+        return f'{doc["text"]}\nAnswer with only the result, no explanations needed.\nAnswer:'
 
     def doc_to_target(self, doc):
         return doc["value"]

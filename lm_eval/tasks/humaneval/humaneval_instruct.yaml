@@ -7,5 +7,14 @@ filter_list:
     filter:
       - function: "custom"
         filter_fn: !function utils.build_predictions_instruct
+generation_kwargs:
+  # until:
+  #   - "\nclass"
+  #   - "\ndef"
+  #   - "\n#"
+  #   - "\nif"
+  #   - "\nprint"
+  max_gen_toks: 1024
+  do_sample: false
 metadata:
   version: 4.0

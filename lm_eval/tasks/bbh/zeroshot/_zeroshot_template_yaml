@@ -1,4 +1,4 @@
-dataset_path: lukaemon/bbh
+dataset_path: SaylorTwift/bbh
 output_type: generate_until
 test_split: test
 # doc_to_text: "Question: {{input}}\nAnswer with only the result, no explanations needed. \nAnswer:"
@@ -22,7 +22,7 @@ generation_kwargs:
     - "<|im_end|>"
   do_sample: false
   temperature: 0.0
-  max_gen_toks: 8
+  # max_gen_toks: 8
 num_fewshot: 0
 metadata:
   version: 3.0
