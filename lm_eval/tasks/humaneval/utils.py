@@ -1,4 +1,8 @@
 import evaluate as hf_evaluate
+import os
+import re
+
+os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
 
 try:
@@ -33,6 +37,20 @@ def build_predictions_instruct(
     return [
         [
             doc["prompt"] + (r if r.find("```") == -1 else r[: r.find("```")])
+            for r in resp
+        ]
+        for resp, doc in zip(resps, docs)
+    ]
+
+def build_predictions_instruct_delimiter(
+    resps: list[list[str]], docs: list[dict]
+) -> list[list[str]]:
+    # # Regex: capture from "def" until the first "return" line
+    # pattern = r"(def\s+\w+\([^)]*\):[\s\S]*?return[^\n]*)"
+
+    return [
+        [
+            r.split("```")[1][7:] if 'python\n' in r.split("```")[1] else r.split("```")[1]
             for r in resp
         ]
         for resp, doc in zip(resps, docs)

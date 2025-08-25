@@ -7,6 +7,10 @@ filter_list:
     filter:
       - function: "custom"
         filter_fn: !function utils.build_predictions_instruct
+  - name: "create_test_delimiter"
+    filter:
+      - function: "custom"
+        filter_fn: !function utils.build_predictions_instruct_delimiter
 generation_kwargs:
   # until:
   #   - "\nclass"
@@ -14,6 +18,7 @@ generation_kwargs:
   #   - "\n#"
   #   - "\nif"
   #   - "\nprint"
+  until: []
   max_gen_toks: 1024
   do_sample: false
 metadata:
