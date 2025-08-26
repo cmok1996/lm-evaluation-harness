@@ -16,8 +16,16 @@
 - swde
 - humaneval
 - humaneval_instruct
+- winogrande_gen
 
 -----------------------------------------
+# support generate_until for winogrande: 26-8-2025
+1. support winogrande to generate_until task as winogrande_gen
+
+# Update humaneval: 25-8-2025
+1. revert gsm8k doc_to_text prompt to original
+2. update doc_to_text prompt for bbh_fewshot and include subset as bbh_fewshot_subset
+3. update doc_to_text prompt for swde
 
 # Update humaneval: 25-8-2025
 1. revert gsm8k doc_to_text prompt to original
