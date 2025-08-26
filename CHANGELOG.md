@@ -19,6 +19,10 @@
 - winogrande_gen
 
 -----------------------------------------
+# include metadata for supported tasks and script for task statistics
+1. task_config.py to provide metadata for supported tasks
+2. task_stats.py to generate count statistics for supported tasks
+
 # support generate_until for winogrande: 26-8-2025
 1. support winogrande to generate_until task as winogrande_gen
 
