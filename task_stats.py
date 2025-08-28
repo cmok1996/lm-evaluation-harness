@@ -102,9 +102,23 @@ def get_task_num_samples(tasks: Union[str, list], limits: Union[int, float, list
     
     return task_config
 
+def get_task_num_samples_from_config(tasks, limit):
+    task_stats = dict()
+    for task in tasks:
+        supported_tasks = get_supported_tasks()
+        if task not in supported_tasks:
+            raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
+        task_config = TASK_CONFIG[task]
+        original_size = task_config['n_samples']
+        effective_size = get_sample_size(original_size, limit)
+        task_stats[task] = {'num_samples': original_size,
+                'effective': effective_size}
+
+    return task_stats
+
 if __name__ == '__main__':
     # dataset = _load_dataset('ifeval')
-    tasks = get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
+    tasks =  get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
     limits = None # [1.0, 0.05] or 5
-    task_config = get_task_num_samples(tasks, limits)
+    task_config = get_task_num_samples_from_config(tasks, limits)
     print(task_config)

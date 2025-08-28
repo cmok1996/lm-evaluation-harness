@@ -19,7 +19,11 @@
 - winogrande_gen
 
 -----------------------------------------
-# update get_sample_size code for limit
+# update get_sample_size code for limit: 28-8-2025
+1. add more fields for task_config
+2. get sample size from config instead of load_dataset
+
+# update get_sample_size code for limit: 27-8-2025
 1. treat limit=1.0 as 100% while limit=1 as 1 sample
 
 # include metadata for supported tasks and script for task statistics: 26-8-2025
