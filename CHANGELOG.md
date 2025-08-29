@@ -17,8 +17,14 @@
 - humaneval
 - humaneval_instruct
 - winogrande_gen
+- wmt24
+- wmt24_subset
 
 -----------------------------------------
+# support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
+1. support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
+2. subset includes "en-ar_EG", "en-zh_CN", "en-de_DE", "en-es_MX", "en-fr_CA", "en-it_IT", "en-ja_JP", "en-ta_IN", "en-th_TH", "en-vi_VN"
+
 # update get_sample_size code for limit: 28-8-2025
 1. add more fields for task_config
 2. get sample size from config instead of load_dataset
