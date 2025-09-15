@@ -6,7 +6,7 @@ TASK_CONFIG = {
         "benchmark_category": "alignment",
         "usage": "short_prompt_medium_output",
         "n_shot": 0,
-        "metrics": "prompt_level_strict_acc",
+        "metrics": "prompt_level_strict_acc,none",
         "n_samples": 541,
     },
     "gsm8k": {
