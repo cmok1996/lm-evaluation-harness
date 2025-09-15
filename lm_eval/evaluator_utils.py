@@ -4,6 +4,7 @@ import math
 import pathlib
 import sys
 from typing import List, Optional, Tuple, Union
+import re
 
 from lm_eval.api.group import ConfigurableGroup
 from lm_eval.api.metrics import (
@@ -229,6 +230,9 @@ def get_sample_size(task, limit: Optional[int]) -> Union[int, None]:
     cnt = max(0, cnt)
     return cnt
 
+def strip_thinking_tags(response: str):
+    response = re.sub(r".*?<\/think>(\\n)*", "", response, flags=re.DOTALL).strip()
+    return response
 
 def prepare_print_tasks(
     task_dict: dict,

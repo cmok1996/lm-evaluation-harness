@@ -24,6 +24,7 @@
 # minor fixes: 15-9-2025
 1. modify ifeval metrics in task config
 2. remove eval_results directory
+3. disable removal of thinking tags for ifeval as it will be handled in mep
 
 # support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
 1. support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
