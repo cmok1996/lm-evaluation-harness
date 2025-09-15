@@ -1,0 +1,18 @@
+group: wmt24_subset
+task:
+  - wmt24_ar
+  - wmt24_cn
+  - wmt24_de
+  - wmt24_es
+  - wmt24_fr
+  - wmt24_it
+  - wmt24_ja
+  - wmt24_ta
+  - wmt24_th
+  - wmt24_vi
+aggregate_metric_list:
+  - metric: bleu
+    aggregation: mean
+    weight_by_size: true
+metadata:
+  version: 1.0

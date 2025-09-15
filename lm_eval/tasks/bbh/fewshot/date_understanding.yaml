@@ -3,9 +3,7 @@ description: 'Infer the date from context.
 
 
   '
-doc_to_text: 'Q: {{input}}
-
-  A:'
+doc_to_text: "Question: {{input}}\nAnswer with only the result, no explanations needed. Choose ONLY one of the following result: (A), (B), (C), (D), (E), (F). \nAnswer:"
 fewshot_config:
   sampler: first_n
   samples:

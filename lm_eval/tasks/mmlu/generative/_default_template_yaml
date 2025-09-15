@@ -1,15 +1,15 @@
-dataset_path: cais/mmlu
+dataset_path: hails/mmlu_no_train # a copy of `cais/mmlu` with no auxiliary_train split
 test_split: test
 fewshot_split: dev
 fewshot_config:
   sampler: first_n
 output_type: generate_until
-doc_to_text: "{{question.strip()}}\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer:"
+doc_to_text: "{{question.strip()}}\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer with only the result, no explanations needed. \nAnswer:"
 doc_to_target: "{{['A', 'B', 'C', 'D'][answer]}}"
 generation_kwargs:
-  until:
-    - "</s>"
-    - "\n"
+  until: []
+  max_gen_toks: 32
+  temperature: 0.0
 metric_list:
   - metric: exact_match
     aggregation: mean
@@ -19,14 +19,10 @@ metric_list:
 filter_list:
   - name: get_response
     filter:
-      # Filter everything after the first break line
       - function: "regex"
-        regex_pattern: "^(.*?)(?=\\n|$)"
-      # Remove leading white spaces
-      - function: remove_whitespace
-      # function to ignore right white spaces or line breaks
-      - function: "regex"
-        regex_pattern: "^(.*?)\\s*$"
+        regex_pattern: '\b([ABCD])\.?\b'
       - function: take_first
 metadata:
   version: 3.0
+dataset_kwargs:
+  trust_remote_code: true

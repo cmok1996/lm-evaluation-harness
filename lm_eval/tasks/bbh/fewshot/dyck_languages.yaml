@@ -3,9 +3,7 @@ description: 'Correctly close a Dyck-n word.
 
 
   '
-doc_to_text: 'Q: {{input}}
-
-  A:'
+doc_to_text: "Question: {{input}}\nAnswer with only the result, no explanations needed. \nAnswer:"
 fewshot_config:
   sampler: first_n
   samples:

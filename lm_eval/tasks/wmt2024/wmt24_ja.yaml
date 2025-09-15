@@ -1,0 +1,18 @@
+task: wmt24_ja
+dataset_path: google/wmt24pp
+dataset_name: en-ja_JP
+test_split : train
+# training_split: train
+# validation_split: validation
+output_type: generate_until
+doc_to_text: "translate the following text to English without any explanation or prefix: {{target}}"
+doc_to_target: "{{source}}"
+metric_list:
+  # - metric: wer
+  #   aggregation: mean
+  #   higher_is_better: false
+  - metric: !function metrics.bleu
+    aggregation: !function metrics.agg_bleu
+    higher_is_better: true
+metadata:
+  version: 1.0

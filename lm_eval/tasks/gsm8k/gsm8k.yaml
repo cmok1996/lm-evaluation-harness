@@ -30,11 +30,11 @@ generation_kwargs:
 repeats: 1
 num_fewshot: 5
 filter_list:
-  - name: "strict-match"
-    filter:
-      - function: "regex"
-        regex_pattern: "#### (\\-?[0-9\\.\\,]+)"
-      - function: "take_first"
+  # - name: "strict-match"
+  #   filter:
+  #     - function: "regex"
+  #       regex_pattern: "#### (\\-?[0-9\\.\\,]+)"
+  #     - function: "take_first"
   - name: "flexible-extract"
     filter:
       - function: "regex"

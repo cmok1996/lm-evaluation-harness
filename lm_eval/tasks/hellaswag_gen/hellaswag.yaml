@@ -1,0 +1,36 @@
+
+tag:
+  - generate_until
+task: hellaswag_gen
+dataset_path: hellaswag
+dataset_name: null
+output_type: generate_until
+training_split: train
+validation_split: validation
+test_split: null
+process_docs: !function utils.process_docs
+# doc_to_text: "{{query}}"
+doc_to_text: "{{query.strip()}}\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer with only the result, no explanations needed. \nAnswer:"
+# doc_to_target: "{{label}}"
+doc_to_target: "{{['A', 'B', 'C', 'D'][label | int]}}"
+# doc_to_choice: "choices"
+generation_kwargs:
+  until: []
+  max_gen_toks: 8
+  temperature: 0.0
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true
+    ignore_punctuation: true
+    ignore_case: true
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '\b([ABCD])\.?\b'
+      - function: take_first
+metadata:
+  version: 1.0
+dataset_kwargs:
+  trust_remote_code: true

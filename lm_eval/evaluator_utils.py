@@ -210,12 +210,24 @@ def print_writeout(task) -> None:
             eval_logger.info(f"Request: {str(inst)}")
 
 
+# def get_sample_size(task, limit: Optional[int]) -> Union[int, None]:
+#     if limit is not None:
+#         limit = (
+#             int(math.ceil(len(task.eval_docs) * limit)) if limit < 1.0 else int(limit)
+#         )
+#     return limit
+
 def get_sample_size(task, limit: Optional[int]) -> Union[int, None]:
+    original_size = len(task.eval_docs)
     if limit is not None:
-        limit = (
-            int(math.ceil(len(task.eval_docs) * limit)) if limit < 1.0 else int(limit)
+        cnt = (
+            int(math.ceil(original_size * limit)) if ((limit <= 1.0) and (isinstance(limit, float))) else int(limit) #1.0 is treated as 100% of samples, while 1 is treated as 1 sample
         )
-    return limit
+    else:
+        cnt = original_size
+    cnt = min(cnt, original_size)
+    cnt = max(0, cnt)
+    return cnt
 
 
 def prepare_print_tasks(
