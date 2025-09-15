@@ -21,6 +21,10 @@
 - wmt24_subset
 
 -----------------------------------------
+# minor fixes: 15-9-2025
+1. modify ifeval metrics in task config
+2. remove eval_results directory
+
 # support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
 1. support wmt24 and wmt24_subset, reverse translation task to input foreign source and output english: 29-8-2025
 2. subset includes "en-ar_EG", "en-zh_CN", "en-de_DE", "en-es_MX", "en-fr_CA", "en-it_IT", "en-ja_JP", "en-ta_IN", "en-th_TH", "en-vi_VN"
