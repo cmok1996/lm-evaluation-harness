@@ -3,6 +3,13 @@ from task_config import TASK_CONFIG
 from typing import Optional, Union
 import math
 import logging
+import re
+import os
+from datetime import datetime
+import json
+from pydantic import BaseModel, Field
+from typing import List, Optional
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,                     # minimum log level
@@ -116,9 +123,128 @@ def get_task_num_samples_from_config(tasks, limit):
 
     return task_stats
 
+def get_sample_path_by_task(task_dir, model):
+    pattern = re.compile(r"^samples_(.*)_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d+)\.jsonl?$")
+
+    path_dir = os.path.join(task_dir,  model)
+    matched_files = []
+    for filename in os.listdir(path_dir):
+        
+        match = pattern.match(filename)
+        if match:
+            subtask = match.group(1)
+            timestamp_str = match.group(2)
+            # Convert to datetime object
+            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S.%f")
+            file_path = os.path.join(path_dir, filename)
+            matched_files.append((filename, subtask, timestamp, timestamp_str, file_path))
+
+    #sort by timestamp descending
+    matched_files.sort(key=lambda x: x[2], reverse=True)
+
+    # latest_timestamp = matched_files[0][2] if matched_files else None
+
+    # Get the latest file
+    # if matched_files:
+    #     latest_file = matched_files[0][0]
+    #     latest_file_path = os.path.join(path_dir, latest_file)
+    #     print("Latest sample file:", latest_file)
+    # else:
+    #     print("No matching sample files found.")
+
+    return matched_files #latest_file_path, matched_files
+
+class SampleResponse(BaseModel):
+    model: Optional[str] = Field(default=None, description="Model name")
+    task: Optional[str] = Field(default=None, description="Task name")
+    subtask: Optional[str] = Field(default=None, description="Subtask Dataset name")
+    prompt_idx: Optional[int] = Field(default=None, description="Benchmark prompt index")
+    prompt: Optional[str] = Field(default=None, description="Task name")
+    # full_prompt: str
+    response: str
+    filtered_response: str
+    gold: Union[str, List[str], int, List[int], None]
+    metric: Optional[str] = None
+    is_correct: Optional[bool] = Field(default=None, description="accuracy or correctness of the response")
+    timestamp_str: Optional[str] =  Field(default=None, description="Timestamp string when the sample was generated")
+
+def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
+    # sample_path = get_latest_sample_path(eval_dir, model)
+
+    with open(sample_path, 'r', encoding='utf-8') as f:
+        data = [json.loads(line) for line in f]
+
+    def standardize_is_correct(value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value == 1
+        if isinstance(value, str):
+            value_lower = value.strip().lower()
+            if value_lower in ['1', 'true', 'yes']:
+                return True
+            elif value_lower in ['0', 'false', 'no']:
+                return False
+        # If value is invalid or unrecognized
+        return None
+
+    samples = []
+    for sample_data in data:
+        prompt_idx = sample_data['doc_id']
+        prompt = sample_data['arguments']['gen_args_0']['arg_0']
+        response = sample_data['resps'][0][0]
+        filtered_response = ",".join(sample_data['filtered_resps']) if isinstance(sample_data['filtered_resps'][0], str)  else ",".join(sample_data['filtered_resps'][0]) 
+        gold = sample_data['target']
+        metric = TASK_CONFIG[TASK]['metrics'].split(',')[0] #sample_data['metrics']
+        is_correct = standardize_is_correct(sample_data[metric])
+
+        sample = SampleResponse(
+            model=model,
+            task=TASK,
+            subtask = subtask,
+            prompt_idx=prompt_idx,
+            prompt=prompt,
+            response=response,
+            filtered_response=filtered_response,
+            gold=gold,
+            metric=metric,
+            is_correct=is_correct,
+            timestamp=timestamp_str
+        )
+
+        samples.append(sample)
+    df_model = pd.DataFrame([s.dict() for s in samples])
+    return df_model
+
+def compare_responses_across_models(TASK, eval_dir, model_names = None):
+    task_dir = os.path.join(eval_dir, f'{TASK}_eval')
+    if model_names is None:
+        model_names = os.listdir(task_dir)
+
+    df_all = pd.DataFrame()
+    for model in model_names:
+        matched_files = get_sample_path_by_task(task_dir, model)
+        for filename, subtask, timestamp, timestamp_str, file_path in matched_files:
+            
+            # sample_model_path = get_sample_path_by_task(task_dir, model)
+            df_model = get_response_df(TASK, file_path, model, timestamp_str, subtask)
+            df_all = pd.concat([df_all, df_model], ignore_index=True)
+
+    # get latest timestamp for each prompt_idx and model
+    df_pivot = df_all.pivot_table(index=['task', 'subtask', 'prompt_idx', 'prompt', 'gold'], columns='model', values='is_correct', aggfunc='max').reset_index()
+
+    return df_pivot, df_all
+    
+
+
 if __name__ == '__main__':
     # dataset = _load_dataset('ifeval')
-    tasks =  get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
-    limits = None # [1.0, 0.05] or 5
-    task_config = get_task_num_samples_from_config(tasks, limits)
-    print(task_config)
+    # tasks =  get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
+    # limits = None # [1.0, 0.05] or 5
+    # task_config = get_task_num_samples_from_config(tasks, limits)
+    # print(task_config)
+
+    df_pivot, df_responses = compare_responses_across_models('gsm8k', 'eval_results')
+    print(df_responses)
+
+    
