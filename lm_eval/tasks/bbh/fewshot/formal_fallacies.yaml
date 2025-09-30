@@ -56,3 +56,9 @@ fewshot_config:
     target: invalid
 include: _fewshot_template_yaml
 task: bbh_fewshot_formal_fallacies
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(valid|invalid)'
+      - function: take_first

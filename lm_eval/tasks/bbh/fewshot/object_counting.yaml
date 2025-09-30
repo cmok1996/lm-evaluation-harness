@@ -19,3 +19,9 @@ fewshot_config:
     target: '8'
 include: _fewshot_template_yaml
 task: bbh_fewshot_object_counting
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(-?\d+)'
+      - function: take_first

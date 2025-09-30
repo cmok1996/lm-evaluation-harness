@@ -1,0 +1,9 @@
+group: mmlu_stem_gen_orig
+task:
+  - mmlu_stem_orig_generative
+aggregate_metric_list:
+  - metric: exact_match
+    weight_by_size: true
+    filter_list: get_response
+metadata:
+  version: 3

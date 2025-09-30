@@ -19,3 +19,9 @@ fewshot_config:
     target: '} ] >'
 include: _fewshot_template_yaml
 task: bbh_fewshot_dyck_languages
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: "(?<= )([\" \\[\\(<{}>\\)\\]]+)|([\" \\[\\(<{}>\\)\\]]+)"
+      - function: take_first

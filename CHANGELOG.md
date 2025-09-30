@@ -30,12 +30,19 @@
 
 
 -----------------------------------------
-# wrap task_stats functions into fastapi 30-9-2025
+# update tasks config and include original tasks: 30-9-2025
+1. modify mmlu subsets to include aggregate score
+2. modify doc_to_text for mmlu to limit the choices responses
+3. modify bbh filter to extract desired regex
+4. modify humaneval doc_to_text and metric function to extract code
+5. fix get_sample_size to only limit 1 sample if limit = 1
+6. include original tasks - mmlu, bbh, humaneval, swde
+
+# wrap task_stats functions into fastapi: 30-9-2025
 1. wrap task_stats functions into fastapi
 2. get overall and per-sample results from file
 3. update requirements
 4. fix /api/task/num_samples to include limit argument
-5. fix get_sample_size to only limit 1 sample if limit = 1
 
 # minor fixes: 15-9-2025
 1. modify ifeval metrics in task config

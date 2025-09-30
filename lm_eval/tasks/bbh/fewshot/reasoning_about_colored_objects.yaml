@@ -115,3 +115,9 @@ fewshot_config:
     target: (A)
 include: _fewshot_template_yaml
 task: bbh_fewshot_reasoning_about_colored_objects
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(\([A-Z]\))'
+      - function: take_first

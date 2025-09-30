@@ -49,3 +49,9 @@ fewshot_config:
     target: (C)
 include: _fewshot_template_yaml
 task: bbh_fewshot_disambiguation_qa
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(\([A-Z]\))'
+      - function: take_first

@@ -67,3 +67,9 @@ fewshot_config:
     target: (D)
 include: _fewshot_template_yaml
 task: bbh_fewshot_penguins_in_a_table
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(\([A-Z]\))'
+      - function: take_first

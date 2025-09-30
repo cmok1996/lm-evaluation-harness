@@ -15,3 +15,9 @@ fewshot_config:
     target: 'True'
 include: _fewshot_template_yaml
 task: bbh_fewshot_boolean_expressions
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '\b(True|False)\b'
+      - function: take_first
