@@ -5,7 +5,7 @@ prompt = "Write a 300+ word summary of the wikipedia page \"https://en.wikipedia
 url = "http://localhost:8010/api/tasks/accuracy_per_sample"
 params = {
     "task": "ifeval",
-    "eval_dir": "eval_results",
+    "eval_dir": "eval_results/ifeval_eval",
     "model_names": "llama3.1",
     "prompt": prompt
 }
