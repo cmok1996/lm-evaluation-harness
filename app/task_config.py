@@ -46,7 +46,7 @@ TASK_CONFIG = {
         "benchmark_category": "alignment",
         "usage": "short_prompt_short_output",
         "n_shot": 0,
-        "metrics": "bleurt_acc",
+        "metrics": "bleu_acc,none",
         "n_samples": 817,
     },
     "mmlu_generative": {

@@ -48,10 +48,10 @@ def get_results(task, results_path):
     return {"task": task, "accuracy": accuracy, "metric": metric}
 
 @router.get("/tasks/accuracy_per_sample")
-def get_accuracy_per_sample(task, eval_dir, model_names: List[str] = Query(...), prompt: Union[int, str, None] = None):
+def get_accuracy_per_sample(task, task_dir, model_names: List[str] = Query(...), prompt: Union[int, str, None] = None):
     if task not in TASK_CONFIG:
         return {"error": "Task not found"}
-    df_pivot, df_responses = compare_responses_across_models(task, eval_dir, model_names, prompt)
+    df_pivot, df_responses = compare_responses_across_models(task, task_dir, model_names, prompt)
     if df_pivot is None or df_responses is None:
         return {"error": "Could not compute accuracy per sample. Check eval directory and format."}
     return {

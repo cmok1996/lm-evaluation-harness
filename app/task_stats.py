@@ -255,8 +255,12 @@ def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
     df_model = pd.DataFrame([s.dict() for s in samples])
     return df_model
 
-def compare_responses_across_models(TASK, eval_dir, model_names = None, prompt = None):
-    task_dir = os.path.join(eval_dir, f'{TASK}_eval')
+def compare_responses_across_models(TASK, task_dir, model_names = None, prompt = None):
+    # task_dir structure:
+    # task_dir
+    #   {model_name}/
+    #       samples_{subtask}_{timestamp}.jsonl
+    #       results_{timestamp}.json
     if model_names is None:
         model_names = os.listdir(task_dir)
 

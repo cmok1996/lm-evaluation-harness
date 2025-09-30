@@ -37,6 +37,7 @@
 4. modify humaneval doc_to_text and metric function to extract code
 5. fix get_sample_size to only limit 1 sample if limit = 1
 6. include original tasks - mmlu, bbh, humaneval, swde
+7. fix truthfqulqa_gen metric to bleu_acc,none
 
 # wrap task_stats functions into fastapi: 30-9-2025
 1. wrap task_stats functions into fastapi
