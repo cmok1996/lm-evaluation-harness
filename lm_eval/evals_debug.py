@@ -20,10 +20,11 @@ handler.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(handler)
 
-TASKS = ['gsm8k'] #['mgsm_direct_zh'] #['ifeval', 'gsm8k', 'bbh_zeroshot_subset', 'mmlu_generative',   'truthfulqa_gen', 'mutual'] #['ifeval'] #['mmlu_generative', 'bbh_zeroshot_subset', 'ifeval', 'gsm8k', 'race', 'truthfulqa_gen', 'mutual'] # #mutual 'race',  ['longbench_hotpotqa'] #['ifeval', 'mmlu_generative'] #
+TASKS = ['humaneval'] #['mgsm_direct_zh'] #['ifeval', 'gsm8k', 'bbh_zeroshot_subset', 'mmlu_generative',   'truthfulqa_gen', 'mutual'] #['ifeval'] #['mmlu_generative', 'bbh_zeroshot_subset', 'ifeval', 'gsm8k', 'race', 'truthfulqa_gen', 'mutual'] # #mutual 'race',  ['longbench_hotpotqa'] #['ifeval', 'mmlu_generative'] #
 MODEL_BACKEND = 'local-completions' #hf #'openvino_genai' #'openvino_genai' # 'builtin_gguf' #'builtin_gguf' #'gguf' # #'local-completions' #
 # MODELS = ['intel_sealion_v2.1_ipex_0307']
 MODELS = [
+    "gpt-oss:20b"
     # "qwen3:latest",
     # "Qwen/Qwen3-8B",
     # "meta-llama/Llama-3.1-8B-Instruct",
@@ -74,12 +75,12 @@ MODELS = [
         # 'mistral:7b-instruct-q4_K_M',
         # 'hf.co/mradermacher/Ministral-3b-instruct-GGUF:q4_k_m',
         # 'hf.co/unsloth/Phi-4-mini-instruct-GGUF:q4_k_m'
-        'qwen2.5:1.5b-instruct-q4_K_M',
+        # 'qwen2.5:1.5b-instruct-q4_K_M',
         # 'llama3.1:latest',
         # 'qwen2:7b-instruct-q4_K_M'
           ]
 
-LIMIT = 0.02
+LIMIT = 10
 DEVICE = 'cuda:0' #'cuda:0' #'cpu'
 BATCH_SIZE = 'auto'
 LOG_SAMPLES = True

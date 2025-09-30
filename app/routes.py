@@ -18,14 +18,14 @@ def list_tasks():
     tasks = get_supported_tasks()
     return {"tasks": tasks}
 
-@router.get("/tasks/samples")
-def get_task_samples(task_name: str):
+@router.get("/tasks/num_samples")
+def get_task_samples(task_name: str, limit: Union[int, float, None]):
     if isinstance(task_name, str):
         task_name = [task_name]
     for task in task_name:
         if task not in TASK_CONFIG:
             return {"error": "Task not found"}
-    num_samples = get_task_num_samples_from_config(task_name)
+    num_samples = get_task_num_samples_from_config(task_name, limit)
     return {"task": task_name, "num_samples": num_samples}
 
 @router.get("/tasks/connect_db")

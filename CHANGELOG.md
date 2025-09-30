@@ -5,26 +5,37 @@
 - drop_new
 - truthfulqa_gen
 - mmlu_generative
-- mmlu_stem_generative
-- mmlu_social_sciences_generative
-- mmlu_humanities_generative
-- mmlu_others_generative
+- mmlu_stem_gen
+- mmlu_social_sciences_gen
+- mmlu_humanities_gen
+- mmlu_others_gen
 - bbh_zeroshot
 - bbh_zeroshot_subset
 - bbh_fewshot
 - bbh_fewshot_subset
 - swde
 - humaneval
-- humaneval_instruct
 - winogrande_gen
 - wmt24
 - wmt24_subset
+- mmlu_generative_orig
+- mmlu_stem_gen_orig
+- mmlu_social_sciences_gen_orig
+- mmlu_humanities_gen_orig
+- mmlu_others_gen_orig
+- bbh_fewshot_orig
+- bbh_fewshot_subset_orig
+- humaneval_orig
+- swde_orig
+
 
 -----------------------------------------
 # wrap task_stats functions into fastapi 30-9-2025
 1. wrap task_stats functions into fastapi
 2. get overall and per-sample results from file
 3. update requirements
+4. fix /api/task/num_samples to include limit argument
+5. fix get_sample_size to only limit 1 sample if limit = 1
 
 # minor fixes: 15-9-2025
 1. modify ifeval metrics in task config

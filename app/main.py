@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.routes import router
-from app.task_config import TASK_CONFIG
-from app.task_stats import _load_dataset, get_supported_tasks, get_task_num_samples_from_config
 
 app = FastAPI(
     title="LM Eval Harness API",
@@ -9,6 +8,14 @@ app = FastAPI(
     description="LM Eval Harness API"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],  
+)
+ 
 # Include routes
 app.include_router(router)
 
