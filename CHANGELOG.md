@@ -21,6 +21,11 @@
 - wmt24_subset
 
 -----------------------------------------
+# wrap task_stats functions into fastapi 30-9-2025
+1. wrap task_stats functions into fastapi
+2. get overall and per-sample results from file
+3. update requirements
+
 # minor fixes: 15-9-2025
 1. modify ifeval metrics in task config
 2. remove eval_results directory
