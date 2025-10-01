@@ -1,0 +1,14 @@
+group: bbh_fewshot_subset_orig
+task:
+  - bbh_fewshot_boolean_expressions_orig
+  - bbh_fewshot_causal_judgement_orig
+  - bbh_fewshot_formal_fallacies_orig
+  - bbh_fewshot_logical_deduction_five_objects_orig
+  - bbh_fewshot_navigate_orig
+  - bbh_fewshot_object_counting_orig
+aggregate_metric_list:
+  - metric: exact_match
+    aggregation: mean
+    weight_by_size: true
+metadata:
+  version: 3.0

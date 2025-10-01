@@ -1,0 +1,9 @@
+group: mmlu_social_sciences_gen_orig
+task:
+  - mmlu_social_sciences_orig_generative
+aggregate_metric_list:
+  - metric: exact_match
+    weight_by_size: true
+    filter_list: get_response
+metadata:
+  version: 3

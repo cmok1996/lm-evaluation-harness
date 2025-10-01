@@ -3,9 +3,7 @@ description: 'Sort a list of words.
 
 
   '
-doc_to_text: 'Q: {{input}}
-
-  A:'
+doc_to_text: "Question: {{input}}\nAnswer with only the result, no explanations needed. \nAnswer:"
 fewshot_config:
   sampler: first_n
   samples:
@@ -19,3 +17,9 @@ fewshot_config:
     target: arson aspect census mugho newt parthia seismography
 include: _fewshot_template_yaml
 task: bbh_fewshot_word_sorting
+filter_list:
+  - name: get_response
+    filter:
+      # - function: "regex"
+      #   regex_pattern: '\b(Yes|No|yes|no)\b'
+      - function: take_first

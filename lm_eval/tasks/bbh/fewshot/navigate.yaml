@@ -39,3 +39,9 @@ fewshot_config:
     target: 'Yes'
 include: _fewshot_template_yaml
 task: bbh_fewshot_navigate
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '\b(Yes|No|yes|no)\b'
+      - function: take_first

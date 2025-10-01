@@ -15,3 +15,9 @@ fewshot_config:
     target: '-219'
 include: _fewshot_template_yaml
 task: bbh_fewshot_multistep_arithmetic_two
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '(-?\d+)'
+      - function: take_first

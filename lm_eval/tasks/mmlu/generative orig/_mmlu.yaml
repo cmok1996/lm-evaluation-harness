@@ -1,0 +1,38 @@
+group: mmlu_generative_orig
+group_alias: mmlu (generative)
+task:
+  - group: stem_orig
+    task:
+      - mmlu_stem_orig_generative
+    aggregate_metric_list:
+      - metric: exact_match
+        weight_by_size: true
+        filter_list: get_response
+  - group: other_orig
+    task:
+      - mmlu_other_orig_generative
+    aggregate_metric_list:
+      - metric: exact_match
+        weight_by_size: true
+        filter_list: get_response
+  - group: social_sciences_orig
+    task:
+      - mmlu_social_sciences_orig_generative
+    aggregate_metric_list:
+      - metric: exact_match
+        weight_by_size: true
+        filter_list: get_response
+  - group: humanities_orig
+    task:
+      - mmlu_humanities_orig_generative
+    aggregate_metric_list:
+      - metric: exact_match
+        weight_by_size: true
+        filter_list: get_response
+aggregate_metric_list:
+  - aggregation: mean
+    metric: exact_match
+    weight_by_size: true
+    filter_list: get_response
+metadata:
+  version: 3

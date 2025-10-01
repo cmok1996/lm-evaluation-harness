@@ -222,7 +222,7 @@ def get_sample_size(task, limit: Optional[int]) -> Union[int, None]:
     original_size = len(task.eval_docs)
     if limit is not None:
         cnt = (
-            int(math.ceil(original_size * limit)) if ((limit <= 1.0) and (isinstance(limit, float))) else int(limit) #1.0 is treated as 100% of samples, while 1 is treated as 1 sample
+            int(math.ceil(original_size * limit)) if ((limit < 1.0) and (isinstance(limit, float))) else int(limit) #1.0 is treated as 100% of samples, while 1 is treated as 1 sample
         )
     else:
         cnt = original_size

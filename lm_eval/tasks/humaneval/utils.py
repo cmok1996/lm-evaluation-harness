@@ -48,10 +48,30 @@ def build_predictions_instruct_delimiter(
     # # Regex: capture from "def" until the first "return" line
     # pattern = r"(def\s+\w+\([^)]*\):[\s\S]*?return[^\n]*)"
 
-    return [
+    # results = []
+    # for r in resps:
+    #     try:
+    #         parts = r.split("```")
+    #         if len(parts) < 2:
+    #             results.append(r)  # fallback to original
+    #             continue
+    #         code_block = parts[1]
+    #         if 'python\n' in code_block:
+    #             results.append(code_block[7:])  # skip 'python\n'
+    #         else:
+    #             results.append(code_block)
+    #     except Exception:
+    #         results.append(r)  # fallback if anything fails
+
+    # return results
+    pattern = r"```python\n(.*?)```"
+
+    results = [
         [
-            r.split("```")[1][7:] if 'python\n' in r.split("```")[1] else r.split("```")[1]
+            re.search(pattern, r, re.DOTALL).group(1) if re.search(pattern, r, re.DOTALL) else r.split("```")[1] #r.split("```")[-2][7:]
             for r in resp
         ]
         for resp, doc in zip(resps, docs)
     ]
+
+    return results

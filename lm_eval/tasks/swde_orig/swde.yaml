@@ -1,0 +1,2 @@
+task: swde_orig
+class: !function task.SWDE

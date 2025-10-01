@@ -18,3 +18,9 @@ fewshot_config:
     target: 'yes'
 include: _fewshot_template_yaml
 task: bbh_fewshot_sports_understanding
+filter_list:
+  - name: get_response
+    filter:
+      - function: "regex"
+        regex_pattern: '\b(yes|no|Yes|No)\b'
+      - function: take_first

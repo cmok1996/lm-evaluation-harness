@@ -5,22 +5,51 @@
 - drop_new
 - truthfulqa_gen
 - mmlu_generative
-- mmlu_stem_generative
-- mmlu_social_sciences_generative
-- mmlu_humanities_generative
-- mmlu_others_generative
+- mmlu_stem_gen
+- mmlu_social_sciences_gen
+- mmlu_humanities_gen
+- mmlu_others_gen
 - bbh_zeroshot
 - bbh_zeroshot_subset
 - bbh_fewshot
 - bbh_fewshot_subset
 - swde
 - humaneval
-- humaneval_instruct
 - winogrande_gen
 - wmt24
 - wmt24_subset
+- mmlu_generative_orig
+- mmlu_stem_gen_orig
+- mmlu_social_sciences_gen_orig
+- mmlu_humanities_gen_orig
+- mmlu_others_gen_orig
+- bbh_fewshot_orig
+- bbh_fewshot_subset_orig
+- humaneval_orig
+- swde_orig
+
 
 -----------------------------------------
+# enhance api functionality: 1-10-2025
+1. include /get_samples_path, /get_results_path
+2. modify /results to take output_path as argument instead of results.json file
+3. modify path structure
+
+# update tasks config and include original tasks: 30-9-2025
+1. modify mmlu subsets to include aggregate score
+2. modify doc_to_text for mmlu to limit the choices responses
+3. modify bbh filter to extract desired regex
+4. modify humaneval doc_to_text and metric function to extract code
+5. fix get_sample_size to only limit 1 sample if limit = 1
+6. include original tasks - mmlu, bbh, humaneval, swde
+7. fix truthfqulqa_gen metric to bleu_acc,none
+
+# wrap task_stats functions into fastapi: 30-9-2025
+1. wrap task_stats functions into fastapi
+2. get overall and per-sample results from file
+3. update requirements
+4. fix /api/task/num_samples to include limit argument
+
 # minor fixes: 15-9-2025
 1. modify ifeval metrics in task config
 2. remove eval_results directory
