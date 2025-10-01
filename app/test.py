@@ -2,10 +2,10 @@ import requests
 
 prompt = "Write a 300+ word summary of the wikipedia page \"https://en.wikipedia.org/wiki/Raymond_III,_Count_of_Tripoli\". Do not use any commas and highlight at least 3 sections that has titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*."
 
-url = "http://localhost:8010/api/tasks/accuracy_per_sample"
+url = "http://localhost:8000/api/tasks/accuracy_per_sample"
 params = {
     "task": "ifeval",
-    "eval_dir": "eval_results/ifeval_eval",
+    "output_path": "eval_results/ifeval_eval",
     "model_names": "llama3.1",
     "prompt": prompt
 }

@@ -30,6 +30,11 @@
 
 
 -----------------------------------------
+# enhance api functionality: 1-10-2025
+1. include /get_samples_path, /get_results_path
+2. modify /results to take output_path as argument instead of results.json file
+3. modify path structure
+
 # update tasks config and include original tasks: 30-9-2025
 1. modify mmlu subsets to include aggregate score
 2. modify doc_to_text for mmlu to limit the choices responses

@@ -1,5 +1,5 @@
 from datasets import load_dataset, get_dataset_config_names, concatenate_datasets
-from app.task_config import TASK_CONFIG
+from task_config import TASK_CONFIG
 from typing import Optional, Union
 import math
 import logging
@@ -145,22 +145,65 @@ def get_task_num_samples_from_config(tasks, limit = None):
 
     return task_stats
 
-def get_accuracy_results_score(task, results_path):
-    with open(results_path, 'r', encoding='utf-8') as f:
-        # data = [json.loads(line) for line in f]
-        data = json.load(f)
+def get_accuracy_results_score(task, output_path, model):
+    results_paths =  get_results_path_by_task(output_path, model)
+    results_paths = [s[-1] for s in results_paths]
+    scores = []
+    for results_path in results_paths:
 
-    assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
-    
-    metric = TASK_CONFIG[task]['metrics']
-    if task in data['results']:
-        accuracy = data['results'][task][metric]
-    elif task in data['groups']:
-        accuracy = data['groups'][task][metric]
-    else:
-        raise ValueError(f'Task {task} not found in results or groups in {results_path}')
+        with open(results_path, 'r', encoding='utf-8') as f:
+            # data = [json.loads(line) for line in f]
+            data = json.load(f)
+
+        assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
         
-    return accuracy, metric
+        metric = TASK_CONFIG[task]['metrics']
+        if task in data['results']:
+            accuracy = data['results'][task][metric]
+            num_samples = sum(d["effective"] for d in data['n-samples'].values())
+        elif task in data['groups']:
+            accuracy = data['groups'][task][metric]
+            num_samples = sum(d["effective"] for d in data['n-samples'].values())
+        else:
+            raise ValueError(f'Task {task} not found in results or groups in {results_path}')
+        
+        score = {'results_path': results_path,
+                'accuracy': accuracy,
+                'num_samples': num_samples,
+                'metric': metric}
+        scores.append(score)
+        
+    return scores
+
+def get_results_path_by_task(task_dir, model):
+    pattern = re.compile(r"^results_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d+)\.json$")
+
+    path_dir = os.path.join(task_dir,  model)
+    matched_files = []
+    for filename in os.listdir(path_dir):
+        
+        match = pattern.match(filename)
+        if match:
+            timestamp_str = match.group(1)
+            # Convert to datetime object
+            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S.%f")
+            file_path = os.path.join(path_dir, filename)
+            matched_files.append((filename, timestamp, timestamp_str, file_path))
+
+    #sort by timestamp descending
+    matched_files.sort(key=lambda x: x[1], reverse=True)
+
+    # latest_timestamp = matched_files[0][1] if matched_files else None
+
+    # Get the latest file
+    # if matched_files:
+    #     latest_file = matched_files[0][0]
+    #     latest_file_path = os.path.join(path_dir, latest_file)
+    #     print("Latest results file:", latest_file)
+    # else:
+    #     print("No matching results files found.")
+
+    return matched_files #latest_file_path, matched_files
 
 def get_sample_path_by_task(task_dir, model):
     pattern = re.compile(r"^samples_(.*)_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d+)\.jsonl?$")
@@ -205,7 +248,7 @@ class SampleResponse(BaseModel):
     gold: Union[str, List[str], int, List[int], None]
     metric: Optional[str] = None
     is_correct: Optional[bool] = Field(default=None, description="accuracy or correctness of the response")
-    timestamp_str: Optional[str] =  Field(default=None, description="Timestamp string when the sample was generated")
+    timestamp: Optional[str] =  Field(default=None, description="Timestamp string when the sample was generated")
 
 def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
     # sample_path = get_latest_sample_path(eval_dir, model)
