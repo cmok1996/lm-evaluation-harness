@@ -30,6 +30,12 @@
 
 
 -----------------------------------------
+# leaderboard UI with gradio: 2-10-2025
+1. include gradio UI
+2. include /leadeboard api
+3. changes to endpoint prefix
+4. fix bbh_fewshot_subset metric
+
 # enhance api functionality: 1-10-2025
 1. include /get_samples_path, /get_results_path
 2. modify /results to take output_path as argument instead of results.json file
