@@ -14,7 +14,7 @@ generation_kwargs:
   #   - "</s>"
   #   - "Q"
   #   - "\n\n"
-  # max_gen_toks:: 1000
+  # max_gen_toks: 9999
   do_sample: false
   temperature: 0.0
 num_fewshot: 3

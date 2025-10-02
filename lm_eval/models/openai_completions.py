@@ -38,9 +38,9 @@ class LocalCompletionsAPI(TemplateAPI):
             if "max_tokens" in gen_kwargs:
                 max_tokens = gen_kwargs.pop("max_tokens")
             else:
-                max_tokens = gen_kwargs.pop("max_gen_toks", self._max_gen_toks)
+                max_tokens = gen_kwargs.pop("max_gen_toks", None) #self._max_gen_toks
             temperature = gen_kwargs.pop("temperature", 0)
-            stop = handle_stop_sequences(gen_kwargs.pop("until", None), eos)
+            stop = handle_stop_sequences(gen_kwargs.pop("until", None), None) #eos
             return {
                 "prompt": messages,
                 "model": self.model,
