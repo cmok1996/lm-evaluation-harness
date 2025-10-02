@@ -10,8 +10,10 @@ import json
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import pandas as pd
-from pymongo import MongoClient
-from dotenv import load_dotenv
+# from pymongo import MongoClient
+# from dotenv import load_dotenv
+
+from datamodel import SampleResponse
 
 logging.basicConfig(
     level=logging.INFO,                     # minimum log level
@@ -20,7 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+# load_dotenv()
 
 MONGODB_URL = os.getenv("MONGODB_URL")
 
@@ -145,33 +147,48 @@ def get_task_num_samples_from_config(tasks, limit = None):
 
     return task_stats
 
+def sanitize_floats(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_floats(v) for v in obj]
+    elif isinstance(obj, float):
+        if math.isinf(obj) or math.isnan(obj):
+            return None  # or use a default like 0.0
+    return obj
+
 def get_accuracy_results_score(task, output_path, model):
     results_paths =  get_results_path_by_task(output_path, model)
     results_paths = [s[-1] for s in results_paths]
     scores = []
+    
     for results_path in results_paths:
-
         with open(results_path, 'r', encoding='utf-8') as f:
             # data = [json.loads(line) for line in f]
             data = json.load(f)
 
-        assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
-        
-        metric = TASK_CONFIG[task]['metrics']
-        if task in data['results']:
-            accuracy = data['results'][task][metric]
-            num_samples = sum(d["effective"] for d in data['n-samples'].values())
-        elif task in data['groups']:
-            accuracy = data['groups'][task][metric]
-            num_samples = sum(d["effective"] for d in data['n-samples'].values())
-        else:
-            raise ValueError(f'Task {task} not found in results or groups in {results_path}')
-        
-        score = {'results_path': results_path,
-                'accuracy': accuracy,
-                'num_samples': num_samples,
-                'metric': metric}
-        scores.append(score)
+        try:
+            assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
+            metric = TASK_CONFIG[task]['metrics']
+            if task in data['results']:
+                accuracy = data['results'][task][metric]
+                num_samples = sum(d["effective"] for d in data['n-samples'].values())
+            elif task in data['groups']:
+                accuracy = data['groups'][task][metric]
+                num_samples = sum(d["effective"] for d in data['n-samples'].values())
+            else:
+                raise ValueError(f'Task {task} not found in results or groups in {results_path}')
+            
+            score = {'task': task,
+                    'model': model,
+                    'results_path': results_path,
+                    'accuracy': accuracy,
+                    'num_samples': num_samples,
+                    'metric': metric}
+            scores.append(score)
+        except Exception as e:
+            logger.error(f'Error in processing results file {results_path} - {e}')
+            continue
         
     return scores
 
@@ -236,22 +253,77 @@ def get_sample_path_by_task(task_dir, model):
 
     return matched_files #latest_file_path, matched_files
 
-class SampleResponse(BaseModel):
-    model: Optional[str] = Field(default=None, description="Model name")
-    task: Optional[str] = Field(default=None, description="Task name")
-    subtask: Optional[str] = Field(default=None, description="Subtask Dataset name")
-    prompt_idx: Optional[int] = Field(default=None, description="Benchmark prompt index")
-    prompt: Optional[str] = Field(default=None, description="Task name")
-    # full_prompt: str
-    response: str
-    filtered_response: str
-    gold: Union[str, List[str], int, List[int], None]
-    metric: Optional[str] = None
-    is_correct: Optional[bool] = Field(default=None, description="accuracy or correctness of the response")
-    timestamp: Optional[str] =  Field(default=None, description="Timestamp string when the sample was generated")
+def get_benchmarks_by_model(eval_dir, model, tasks):
+    benchmarks = dict()
+    supported_tasks = get_supported_tasks()
+    for task in tasks:
+        if task not in TASK_CONFIG:
+            raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
+        output_path = os.path.join(eval_dir, f'{task}_eval')
+        results = get_accuracy_results_score(task, output_path, model)
+        benchmarks[task] = results
+
+        return benchmarks
+    
+def get_models_by_benchmark(eval_dir, task, models):
+
+    supported_tasks = get_supported_tasks()
+    if task not in TASK_CONFIG:
+        raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
+    output_path = os.path.join(eval_dir, f'{task}_eval')
+    supported_models = os.listdir(output_path) 
+    if models is not None:
+        supported_models = [m for m in models if m in supported_models]
+    return supported_models
+
+def prepare_leaderboard_data(eval_dir, tasks, models = None, min_num_samples = 0):
+    leaderboard_data = pd.DataFrame()
+    df_leaderboard = pd.DataFrame()
+
+    supported_tasks = get_supported_tasks()
+    for task in tasks:
+        try:
+            if task not in TASK_CONFIG:
+                raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
+            output_path = os.path.join(eval_dir, f'{task}_eval')
+            supported_models = os.listdir(output_path) 
+            if models:
+                supported_models = [m for m in models if m in supported_models]
+            task_leaderboard = []
+            for model in supported_models:
+                results = get_accuracy_results_score(task, output_path, model)
+                task_leaderboard.extend(results)
+            df_task_leaderboard = pd.DataFrame(task_leaderboard)
+            df_task_leaderboard = df_task_leaderboard.sort_values(by='accuracy', ascending=False).reset_index(drop=True)
+
+            # remove __latest in models column
+            df_task_leaderboard['model'] = df_task_leaderboard['model'].str.replace(r'__latest$', '', regex=True)
+            # remove duplicates due to multiple runs, take the occurence with highest samples and highest accuracy
+            df_task_leaderboard = df_task_leaderboard.sort_values(by=['num_samples', 'accuracy'], ascending=False).drop_duplicates(subset=['task', 'model'], keep='first').reset_index(drop=True)
+            # filter by min_num_samples
+            df_task_leaderboard = df_task_leaderboard[df_task_leaderboard['num_samples'] >= min_num_samples]
+            leaderboard_data = pd.concat([leaderboard_data, df_task_leaderboard], ignore_index=True)
+        except Exception as e:
+            logger.error(f'Error in processing task - {e}')
+            continue
+    
+    #pivot the dataframe to have models as rows and tasks as columns with accuracy as values
+    if not leaderboard_data.empty:
+        leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
+        df_leaderboard = leaderboard_data.pivot_table(index='model', columns='task', values='accuracy').reset_index()
+
+        df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
+        leaderboard_data = leaderboard_data.to_dict(orient='records')
+        # leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
+    else:
+        df_leaderboard = None
+        leaderboard_data = None
+    return df_leaderboard, leaderboard_data
+
 
 def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
     # sample_path = get_latest_sample_path(eval_dir, model)
+    # platform = "tower", device = "GPU", precision = "4bit", quantization = "Q4_K_M", inference_service = "ollama", chipset = "NVIDIA"
 
     with open(sample_path, 'r', encoding='utf-8') as f:
         data = [json.loads(line) for line in f]
@@ -282,6 +354,12 @@ def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
 
         sample = SampleResponse(
             model=model,
+            # platform = platform,
+            # device = device,
+            # chipset = chipset,
+            # precision = precision,
+            # quantization= quantization,
+            # inference_service=inference_service,
             task=TASK,
             subtask = subtask,
             prompt_idx=prompt_idx,
@@ -335,12 +413,20 @@ def compare_responses_across_models(TASK, task_dir, model_names = None, prompt =
             #if prompt is the prompt string
             df_pivot = df_pivot[df_pivot['prompt']==prompt]
             df_all = df_all[df_all['prompt']==prompt]
+
+    df_pivot = sanitize_floats(df_pivot.to_dict(orient='records'))
+    df_all = sanitize_floats(df_all.to_dict(orient='records'))
     return df_pivot, df_all
     
 
 
 if __name__ == '__main__':
     # dataset = _load_dataset('ifeval')
+
+    eval_dir = 'eval_results'
+    tasks = ['ifeval', 'bbh_fewshot_subset', 'gsm8k', 'swde', 'mmlu_generative', 'hellaswag_gen']
+    df_leaderboard, leaderboard_data = prepare_leaderboard_data(eval_dir, tasks, models = None)
+    print(leaderboard_data)
     # tasks =  get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
     # limits = None # [1.0, 0.05] or 5
     # task_config = get_task_num_samples_from_config(tasks, limits)
@@ -348,7 +434,7 @@ if __name__ == '__main__':
     # prompt = """
     # Question: Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nAnswer:
     # """
-    df_pivot, df_responses = compare_responses_across_models('gsm8k', 'eval_results', model_names = ['llama3.1'])
-    print(df_responses)
+    # df_pivot, df_responses = compare_responses_across_models('ifeval', 'eval_results/ifeval_eval', model_names = ['llama3.1', 'qwen2.5'])
+    # print(df_responses)
 
     
