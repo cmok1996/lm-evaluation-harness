@@ -30,6 +30,10 @@
 
 
 -----------------------------------------
+# generation kwargs for benchmarks: 2-10-2025
+1. modify oepnai completion default generation kwargs for stop and max_gen_toks in create_payload
+2. modify stop and max_gen_toks in bbh to allow for longer responses
+
 # leaderboard UI with gradio: 2-10-2025
 1. include gradio UI
 2. include /leadeboard api
