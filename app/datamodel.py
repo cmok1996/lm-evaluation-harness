@@ -19,3 +19,18 @@ class SampleResponse(BaseModel):
     metric: Optional[str] = None
     is_correct: Optional[bool] = Field(default=None, description="accuracy or correctness of the response")
     timestamp: Optional[str] =  Field(default=None, description="Timestamp string when the sample was generated")
+
+class EvalResults(BaseModel):
+    task: str
+    model: str
+    results_path: str
+    accuracy: float
+    num_samples: int
+    metric: str
+    total_evaluation_time_seconds: Optional[float] = Field(default=None, description="Benchmark evaluation time taken")
+
+class UseCaseScore(BaseModel):
+    model: str
+    weighted_score: Optional[float] = Field(default = None, description = "Cross product of task accuracy and weights before normalization")
+    task_weights : Optional[float] = Field(default = None, description = "Sum of weights for non-null benchmarks as per model")
+    usecase_score: Optional[float] = Field(default = None, description = "weighted_score after normalization of weights")
