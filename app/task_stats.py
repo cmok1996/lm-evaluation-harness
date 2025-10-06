@@ -1,5 +1,6 @@
 from datasets import load_dataset, get_dataset_config_names, concatenate_datasets
 from task_config import TASK_CONFIG
+from use_case_weights import USE_CASE_WEIGHTS
 from typing import Optional, Union
 import math
 import logging
@@ -10,10 +11,11 @@ import json
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import pandas as pd
+from collections import defaultdict
 # from pymongo import MongoClient
 # from dotenv import load_dotenv
 
-from datamodel import SampleResponse
+from datamodel import SampleResponse, EvalResults
 
 logging.basicConfig(
     level=logging.INFO,                     # minimum log level
@@ -170,6 +172,7 @@ def get_accuracy_results_score(task, output_path, model):
         try:
             assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
             metric = TASK_CONFIG[task]['metrics']
+            total_evaluation_time_seconds = data["total_evaluation_time_seconds"]
             if task in data['results']:
                 accuracy = data['results'][task][metric]
                 num_samples = sum(d["effective"] for d in data['n-samples'].values())
@@ -179,13 +182,18 @@ def get_accuracy_results_score(task, output_path, model):
             else:
                 raise ValueError(f'Task {task} not found in results or groups in {results_path}')
             
-            score = {'task': task,
-                    'model': model,
-                    'results_path': results_path,
-                    'accuracy': accuracy,
-                    'num_samples': num_samples,
-                    'metric': metric}
-            scores.append(score)
+            score = EvalResults(task = task,
+                                model = model,
+                                results_path = results_path,
+                                accuracy = accuracy,
+                                num_samples = num_samples,
+                                metric = metric,
+                                total_evaluation_time_seconds=total_evaluation_time_seconds)
+
+            scores.append(score.dict())
+
+            # Sort scores by highest number of samples in descending order, followed by accuracy in descending order
+            scores = sorted(scores, key= lambda x: (-x['num_samples'], -x['accuracy']))
         except Exception as e:
             logger.error(f'Error in processing results file {results_path} - {e}')
             continue
@@ -276,48 +284,69 @@ def get_models_by_benchmark(eval_dir, task, models):
         supported_models = [m for m in models if m in supported_models]
     return supported_models
 
-def prepare_leaderboard_data(eval_dir, tasks, models = None, min_num_samples = 0):
-    leaderboard_data = pd.DataFrame()
-    df_leaderboard = pd.DataFrame()
+def prepare_leaderboard_data(eval_dir, tasks, use_case = None, models = None, min_num_samples = 0):
+    try:
+        leaderboard_data = pd.DataFrame()
+        df_leaderboard = pd.DataFrame()
 
-    supported_tasks = get_supported_tasks()
-    for task in tasks:
-        try:
-            if task not in TASK_CONFIG:
-                raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
-            output_path = os.path.join(eval_dir, f'{task}_eval')
-            supported_models = os.listdir(output_path) 
-            if models:
-                supported_models = [m for m in models if m in supported_models]
-            task_leaderboard = []
-            for model in supported_models:
-                results = get_accuracy_results_score(task, output_path, model)
-                task_leaderboard.extend(results)
-            df_task_leaderboard = pd.DataFrame(task_leaderboard)
-            df_task_leaderboard = df_task_leaderboard.sort_values(by='accuracy', ascending=False).reset_index(drop=True)
+        supported_tasks = get_supported_tasks()
+        for task in tasks:
+            try:
+                if task not in TASK_CONFIG:
+                    raise ValueError(f'{task} not supported, must be one of the following - {supported_tasks}')
+                output_path = os.path.join(eval_dir, f'{task}_eval')
+                supported_models = os.listdir(output_path) 
+                if models:
+                    supported_models = [m for m in models if m in supported_models]
+                task_leaderboard = []
+                for model in supported_models:
+                    results = get_accuracy_results_score(task, output_path, model)
+                    task_leaderboard.extend(results)
+                df_task_leaderboard = pd.DataFrame(task_leaderboard)
+                df_task_leaderboard = df_task_leaderboard.sort_values(by='accuracy', ascending=False).reset_index(drop=True)
 
-            # remove __latest in models column
-            df_task_leaderboard['model'] = df_task_leaderboard['model'].str.replace(r'__latest$', '', regex=True)
-            # remove duplicates due to multiple runs, take the occurence with highest samples and highest accuracy
-            df_task_leaderboard = df_task_leaderboard.sort_values(by=['num_samples', 'accuracy'], ascending=False).drop_duplicates(subset=['task', 'model'], keep='first').reset_index(drop=True)
-            # filter by min_num_samples
-            df_task_leaderboard = df_task_leaderboard[df_task_leaderboard['num_samples'] >= min_num_samples]
-            leaderboard_data = pd.concat([leaderboard_data, df_task_leaderboard], ignore_index=True)
-        except Exception as e:
-            logger.error(f'Error in processing task - {e}')
-            continue
+                # remove __latest in models column
+                df_task_leaderboard['model'] = df_task_leaderboard['model'].str.replace(r'__latest$', '', regex=True)
+                # remove duplicates due to multiple runs, take the occurence with highest samples and highest accuracy
+                df_task_leaderboard = df_task_leaderboard.sort_values(by=['num_samples', 'accuracy'], ascending=False).drop_duplicates(subset=['task', 'model'], keep='first').reset_index(drop=True)
+                # filter by min_num_samples
+                df_task_leaderboard = df_task_leaderboard[df_task_leaderboard['num_samples'] >= min_num_samples]
+                leaderboard_data = pd.concat([leaderboard_data, df_task_leaderboard], ignore_index=True)
+            except Exception as e:
+                logger.error(f'Error in processing task - {e}')
+                continue
+        
+        #pivot the dataframe to have models as rows and tasks as columns with accuracy as values
+        if not leaderboard_data.empty:
+            leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
+            df_leaderboard = leaderboard_data.pivot_table(index='model', columns='task', values='accuracy').reset_index()
+
+            if use_case is None:
+                df_leaderboard['Aggregated Score'] = df_leaderboard[tasks].mean(axis=1, skipna = True)
+                df_leaderboard['Aggregated Weights'] = 1
+            else:
+                assert use_case in get_supported_use_cases(), f'Use Case {use_case} not supported'
+                # task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
+                df_usecase_score = calculate_use_case_score(leaderboard_data, use_case)
+                #rename columns
+                df_usecase_score.rename(columns = {'usecase_score': 'Aggregated Score', 'task_weights': 'Aggregated Weights'}, inplace=True)
+                #merge leaderboard with usecase scores
+                df_leaderboard = df_leaderboard.merge( df_usecase_score[['model', 'Aggregated Score', 'Aggregated Weights']], on = 'model')
+                df_leaderboard = reorder_column(df_leaderboard, 'Aggregated Score', 1)
+
+            df_leaderboard.sort_values(by = 'Aggregated Score', ascending = False)
+
+            df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
+            leaderboard_data = leaderboard_data.to_dict(orient='records')
+            # leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
+        else:
+            df_leaderboard = None
+            leaderboard_data = None
+
+    except Exception as e:
+        logger.error(f'Error in processing dataset - {e}')
+        raise e
     
-    #pivot the dataframe to have models as rows and tasks as columns with accuracy as values
-    if not leaderboard_data.empty:
-        leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
-        df_leaderboard = leaderboard_data.pivot_table(index='model', columns='task', values='accuracy').reset_index()
-
-        df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
-        leaderboard_data = leaderboard_data.to_dict(orient='records')
-        # leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
-    else:
-        df_leaderboard = None
-        leaderboard_data = None
     return df_leaderboard, leaderboard_data
 
 
@@ -376,6 +405,33 @@ def get_response_df(TASK, sample_path, model, timestamp_str, subtask = None):
     df_model = pd.DataFrame([s.dict() for s in samples])
     return df_model
 
+def categorize_question_difficulty(df_pivot):
+    """Categorize each question into easy/medium/hard based on mean accuracy across models."""
+    # 1️⃣ Identify model columns (exclude metadata)
+    exclude_cols = ['sample_id', 'doc_id', 'index', 'prompt_idx', 'task', 'subtask', 'prompt', 'gold']
+    model_cols = [c for c in df_pivot.columns if c not in exclude_cols]
+    
+    # 2️⃣ Compute mean accuracy across models (row-wise)
+    df_pivot['avg_accuracy'] = df_pivot[model_cols].mean(axis=1)
+    
+    # 3️⃣ Categorize into buckets
+    def bucket(acc):
+        if acc >= 0.7: return 'Easy (70–100%)'
+        elif acc >= 0.3: return 'Medium (30–70%)'
+        else: return 'Hard (0–30%)'
+        
+    df_pivot['difficulty'] = df_pivot['avg_accuracy'].apply(bucket)
+    
+    # # 4️⃣ Summary counts
+    # summary = df_pivot['difficulty'].value_counts().to_dict()
+    
+    return df_pivot
+
+def reorder_column(df, col_to_move: str, pos_idx: int):
+    col = df.pop(col_to_move)
+    df.insert(pos_idx, col_to_move, col)
+    return df
+
 def compare_responses_across_models(TASK, task_dir, model_names = None, prompt = None):
     # task_dir structure:
     # task_dir
@@ -403,6 +459,9 @@ def compare_responses_across_models(TASK, task_dir, model_names = None, prompt =
 
     # get latest timestamp for each prompt_idx and model
     df_pivot = df_all.pivot_table(index=['task', 'subtask', 'prompt_idx', 'prompt', 'gold'], columns='model', values='is_correct', aggfunc='max').reset_index()
+    df_pivot = categorize_question_difficulty(df_pivot)
+    df_pivot = reorder_column(df_pivot, 'difficulty', 4)
+
 
     if prompt is not None:
         try:
@@ -418,6 +477,50 @@ def compare_responses_across_models(TASK, task_dir, model_names = None, prompt =
     df_all = sanitize_floats(df_all.to_dict(orient='records'))
     return df_pivot, df_all
     
+def get_supported_use_cases():
+    return list(USE_CASE_WEIGHTS.keys())
+
+def get_use_case_weights(use_case):
+    return USE_CASE_WEIGHTS[use_case]
+
+def get_use_case_weights_by_task(use_case, tasks):
+    weights = USE_CASE_WEIGHTS[use_case]
+
+    task_weights_dict = dict()
+    for task in tasks:
+        assert task in TASK_CONFIG.keys(), f'Task {task} not found in TASK_CONFIG'
+        benchmark_category = TASK_CONFIG[task]["benchmark_category"]
+        task_weight = weights[benchmark_category]
+        task_weights_dict[task] = {'weight':task_weight, 'benchmark_category': benchmark_category}
+
+    return task_weights_dict
+
+def calculate_use_case_score(leaderboard_data, use_case):
+
+    # get task weights
+    tasks = leaderboard_data['task'].unique()
+    task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
+
+    #take average of scores within each benchmark category
+    leaderboard_data['benchmark_category'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['benchmark_category'])
+    leaderboard_data['task_weights'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['weight'])
+    
+    df_agg = leaderboard_data.groupby(['model','benchmark_category']).agg({
+        'accuracy': 'mean',
+        'task_weights': 'max'
+    }).reset_index()
+
+    # aggregate the sum of accuracy and task weights to handle missing values so the sum of task_weights might not sum to 1
+    df_agg['weighted_score'] = df_agg['task_weights'] * df_agg['accuracy']
+    df_agg2 = df_agg.groupby('model').agg({
+        'weighted_score': 'sum',
+        'task_weights': 'sum'
+    }).reset_index()
+
+    #normalize the score based on weights computed
+    df_agg2['usecase_score'] = df_agg2['weighted_score'] / df_agg2['task_weights']
+
+    return df_agg2
 
 
 if __name__ == '__main__':

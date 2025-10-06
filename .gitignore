@@ -24,6 +24,7 @@ dist/
 .ipynb_checkpoints/
 profile_default/
 ipython_config.py
+*.ipynb
 
 # Output and data
 output/

@@ -27,9 +27,16 @@
 - bbh_fewshot_subset_orig
 - humaneval_orig
 - swde_orig
+- mgsm_direct_zh
 
 
 -----------------------------------------
+# leaderboard aggregate scores by use-cases 6-10-2025
+1. separate routers into tasks and leaderboard
+2. include leaderboard api
+3. use case config
+4. include mgsm_direct_zh as supported task
+
 # generation kwargs for benchmarks: 2-10-2025
 1. modify oepnai completion default generation kwargs for stop and max_gen_toks in create_payload
 2. modify stop and max_gen_toks in bbh to allow for longer responses

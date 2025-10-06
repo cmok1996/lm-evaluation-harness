@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import router
+from routers.tasks import router as task_router
+from routers.leaderboard import router as leaderboard_router
 import uvicorn
 
 app = FastAPI(
@@ -18,7 +19,8 @@ app.add_middleware(
 )
  
 # Include routes
-app.include_router(router)
+app.include_router(task_router)
+app.include_router(leaderboard_router)
 
 @app.get("/")
 def root():
