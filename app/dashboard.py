@@ -385,6 +385,8 @@ def create_leaderboard(tasks: list, output_path: str, models: str, min_num_sampl
     # Fetch leaderboard data
     df_leaderboard, detailed_data = dashboard.fetch_leaderboard(output_path, tasks, model_list, min_num_samples, use_case)
     # df_leaderboard['Average Score'] = df_leaderboard[tasks].mean(axis=1, skipna = True)
+
+    df_leaderboard.rename(columns = {'usecase_score': 'Aggregated Score', 'task_weights': 'Aggregated Weights'}, inplace=True)
     df_leaderboard.sort_values(by = 'Aggregated Score', ascending=False).reset_index(drop=True)
     columns = ['model', 'Aggregated Score'] + tasks
     df_leaderboard = df_leaderboard[columns]

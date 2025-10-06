@@ -31,6 +31,9 @@
 
 
 -----------------------------------------
+# update get_usecase_score api 6-10-2025
+1. update get_usecase_score to be more flexible and return leaderboard pivot table directly
+
 # leaderboard aggregate scores by use-cases 6-10-2025
 1. separate routers into tasks and leaderboard
 2. include leaderboard api

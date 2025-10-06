@@ -284,12 +284,15 @@ def get_models_by_benchmark(eval_dir, task, models):
         supported_models = [m for m in models if m in supported_models]
     return supported_models
 
-def prepare_leaderboard_data(eval_dir, tasks, use_case = None, models = None, min_num_samples = 0):
+def prepare_leaderboard_data(eval_dir, tasks, use_case = None, models = None, min_num_samples = 0, model_cols = None):
     try:
         leaderboard_data = pd.DataFrame()
         df_leaderboard = pd.DataFrame()
 
         supported_tasks = get_supported_tasks()
+
+        if not model_cols:
+            model_cols = ['model']
         for task in tasks:
             try:
                 if task not in TASK_CONFIG:
@@ -308,7 +311,7 @@ def prepare_leaderboard_data(eval_dir, tasks, use_case = None, models = None, mi
                 # remove __latest in models column
                 df_task_leaderboard['model'] = df_task_leaderboard['model'].str.replace(r'__latest$', '', regex=True)
                 # remove duplicates due to multiple runs, take the occurence with highest samples and highest accuracy
-                df_task_leaderboard = df_task_leaderboard.sort_values(by=['num_samples', 'accuracy'], ascending=False).drop_duplicates(subset=['task', 'model'], keep='first').reset_index(drop=True)
+                df_task_leaderboard = df_task_leaderboard.sort_values(by=['num_samples', 'accuracy'], ascending=False).drop_duplicates(subset=['task'] + model_cols, keep='first').reset_index(drop=True)
                 # filter by min_num_samples
                 df_task_leaderboard = df_task_leaderboard[df_task_leaderboard['num_samples'] >= min_num_samples]
                 leaderboard_data = pd.concat([leaderboard_data, df_task_leaderboard], ignore_index=True)
@@ -318,27 +321,30 @@ def prepare_leaderboard_data(eval_dir, tasks, use_case = None, models = None, mi
         
         #pivot the dataframe to have models as rows and tasks as columns with accuracy as values
         if not leaderboard_data.empty:
-            leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
-            df_leaderboard = leaderboard_data.pivot_table(index='model', columns='task', values='accuracy').reset_index()
+            df_leaderboard = calculate_use_case_score(leaderboard_data, use_case, model_cols = model_cols)    
+            leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
 
-            if use_case is None:
-                df_leaderboard['Aggregated Score'] = df_leaderboard[tasks].mean(axis=1, skipna = True)
-                df_leaderboard['Aggregated Weights'] = 1
-            else:
-                assert use_case in get_supported_use_cases(), f'Use Case {use_case} not supported'
-                # task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
-                df_usecase_score = calculate_use_case_score(leaderboard_data, use_case)
-                #rename columns
-                df_usecase_score.rename(columns = {'usecase_score': 'Aggregated Score', 'task_weights': 'Aggregated Weights'}, inplace=True)
-                #merge leaderboard with usecase scores
-                df_leaderboard = df_leaderboard.merge( df_usecase_score[['model', 'Aggregated Score', 'Aggregated Weights']], on = 'model')
-                df_leaderboard = reorder_column(df_leaderboard, 'Aggregated Score', 1)
+            # leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
+            # df_leaderboard = leaderboard_data.pivot_table(index='model', columns='task', values='accuracy').reset_index()
 
-            df_leaderboard.sort_values(by = 'Aggregated Score', ascending = False)
+            # if use_case is None:
+            #     df_leaderboard['Aggregated Score'] = df_leaderboard[tasks].mean(axis=1, skipna = True)
+            #     df_leaderboard['Aggregated Weights'] = 1
+            # else:
+            #     assert use_case in get_supported_use_cases(), f'Use Case {use_case} not supported'
+            #     # task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
+            #     df_usecase_score = calculate_use_case_score(leaderboard_data, use_case)
+            #     #rename columns
+            #     df_usecase_score.rename(columns = {'usecase_score': 'Aggregated Score', 'task_weights': 'Aggregated Weights'}, inplace=True)
+            #     #merge leaderboard with usecase scores
+            #     df_leaderboard = df_leaderboard.merge( df_usecase_score[['model', 'Aggregated Score', 'Aggregated Weights']], on = 'model')
+            #     df_leaderboard = reorder_column(df_leaderboard, 'Aggregated Score', 1)
 
-            df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
-            leaderboard_data = leaderboard_data.to_dict(orient='records')
-            # leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
+            # df_leaderboard.sort_values(by = 'Aggregated Score', ascending = False)
+
+            # df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
+            # leaderboard_data = leaderboard_data.to_dict(orient='records')
+            leaderboard_data = sanitize_floats(leaderboard_data)
         else:
             df_leaderboard = None
             leaderboard_data = None
@@ -495,32 +501,52 @@ def get_use_case_weights_by_task(use_case, tasks):
 
     return task_weights_dict
 
-def calculate_use_case_score(leaderboard_data, use_case):
+def calculate_use_case_score(leaderboard_data, use_case, model_cols = None):
 
-    # get task weights
     tasks = leaderboard_data['task'].unique()
-    task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
+    if not model_cols:
+        model_cols = ['model']
 
-    #take average of scores within each benchmark category
-    leaderboard_data['benchmark_category'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['benchmark_category'])
-    leaderboard_data['task_weights'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['weight'])
-    
-    df_agg = leaderboard_data.groupby(['model','benchmark_category']).agg({
-        'accuracy': 'mean',
-        'task_weights': 'max'
-    }).reset_index()
+    leaderboard_data = leaderboard_data.sort_values(by = ['task', 'accuracy'], ascending = [True, False]).reset_index(drop=True)
+    df_leaderboard = leaderboard_data.pivot_table(index=model_cols, columns='task', values='accuracy').reset_index()
 
-    # aggregate the sum of accuracy and task weights to handle missing values so the sum of task_weights might not sum to 1
-    df_agg['weighted_score'] = df_agg['task_weights'] * df_agg['accuracy']
-    df_agg2 = df_agg.groupby('model').agg({
-        'weighted_score': 'sum',
-        'task_weights': 'sum'
-    }).reset_index()
+    if use_case:
+        # get task weights
+        task_weights_dict = get_use_case_weights_by_task(use_case, tasks)
 
-    #normalize the score based on weights computed
-    df_agg2['usecase_score'] = df_agg2['weighted_score'] / df_agg2['task_weights']
+        #take average of scores within each benchmark category
+        leaderboard_data['benchmark_category'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['benchmark_category'])
+        leaderboard_data['task_weights'] = leaderboard_data['task'].apply(lambda x: task_weights_dict[x]['weight'])
+        
+        df_agg = leaderboard_data.groupby(model_cols + ['benchmark_category']).agg({
+            'accuracy': 'mean',
+            'task_weights': 'max'
+        }).reset_index()
 
-    return df_agg2
+        # aggregate the sum of accuracy and task weights to handle missing values so the sum of task_weights might not sum to 1
+        df_agg['weighted_score'] = df_agg['task_weights'] * df_agg['accuracy']
+        df_agg2 = df_agg.groupby(model_cols).agg({
+            'weighted_score': 'sum',
+            'task_weights': 'sum'
+        }).reset_index()
+
+        #normalize the score based on weights computed
+        df_agg2['usecase_score'] = df_agg2['weighted_score'] / df_agg2['task_weights']
+
+         #merge leaderboard with usecase scores
+        df_leaderboard = df_leaderboard.merge( df_agg2[model_cols + ['usecase_score', 'task_weights']], on = model_cols)
+        df_leaderboard = reorder_column(df_leaderboard, 'usecase_score', 1)
+
+    else:
+        df_leaderboard['task_weights'] = 1
+        df_leaderboard['usecase_score'] = df_leaderboard[tasks].mean(axis=1, skipna = True)
+
+    df_leaderboard.sort_values(by = 'usecase_score', ascending = False)
+
+    df_leaderboard = sanitize_floats(df_leaderboard.to_dict(orient='records'))
+    # leaderboard_data = sanitize_floats(leaderboard_data.to_dict(orient='records'))
+
+    return df_leaderboard
 
 
 if __name__ == '__main__':
@@ -528,7 +554,7 @@ if __name__ == '__main__':
 
     eval_dir = 'eval_results'
     tasks = ['ifeval', 'bbh_fewshot_subset', 'gsm8k', 'swde', 'mmlu_generative', 'hellaswag_gen']
-    df_leaderboard, leaderboard_data = prepare_leaderboard_data(eval_dir, tasks, models = None)
+    df_leaderboard, leaderboard_data = prepare_leaderboard_data(eval_dir, tasks, models = None, model_cols = ['model'])
     print(leaderboard_data)
     # tasks =  get_supported_tasks() #['ifeval', 'bbh_fewshot_subset']
     # limits = None # [1.0, 0.05] or 5

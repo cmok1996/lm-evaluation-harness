@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 from task_config import TASK_CONFIG
 from task_stats import _load_dataset, sanitize_floats, get_supported_tasks, prepare_leaderboard_data, get_supported_use_cases, get_use_case_weights, calculate_use_case_score
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 from pydantic import BaseModel
 import pandas as pd
 
@@ -12,6 +12,7 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 class UseCaseRequest(BaseModel):
     leaderboard_data: List[Dict]  # JSON list of records
     usecase: str
+    model_cols: Optional[List[str]] = None
 
 @router.get("/health")
 def health_check():
@@ -43,12 +44,12 @@ def get_usecase_score(request: UseCaseRequest):
     - usecase_score (list)
     """
     leaderboard_data = pd.DataFrame(request.leaderboard_data)
-    df_usecase_score = calculate_use_case_score(leaderboard_data, request.usecase)
-    usecase_score = sanitize_floats(df_usecase_score.to_dict(orient='records'))
+    df_usecase_score = calculate_use_case_score(leaderboard_data, request.usecase, request.model_cols)
+    usecase_score = sanitize_floats(df_usecase_score)
     return {"result": usecase_score}
 
 @router.get("/leaderboard")
-def get_leaderboard(eval_dir: str, tasks: List[str] = Query(None), use_case:str = None, models: List[str] = Query(None), min_num_samples: int = 0):
+def get_leaderboard(eval_dir: str, tasks: List[str] = Query(None), use_case:str = None, models: List[str] = Query(None), min_num_samples: int = 0,  model_cols: List[str] = Query(None)):
     """ Get leaderboard of models across specified tasks.
     
     Parameters:
@@ -56,6 +57,7 @@ def get_leaderboard(eval_dir: str, tasks: List[str] = Query(None), use_case:str 
     - tasks (list, None): List of task names (must be in TASK_CONFIG). If None, includes all supported tasks.
     - models (list, None): List of model names or task_ids in output_path directory to filter results (optional)
     - min_num_samples (int): Minimum number of samples a model must have evaluated on a task to be included (default=0)
+    - model_cols (list, None): List of columns as indexes for models
     
     Returns:
     - leaderboard (list): each element is a row that corresponds to the accuracy for each specified tasks together with the aggregated usecase score of a model as columns
@@ -69,7 +71,7 @@ def get_leaderboard(eval_dir: str, tasks: List[str] = Query(None), use_case:str 
             for task in tasks:
                 if task not in supported_tasks:
                     return {"error": f"Task '{task}' not found"}
-        df_leaderboard, leaderboard_data = prepare_leaderboard_data(eval_dir, tasks, use_case, models, min_num_samples)
+        df_leaderboard, leaderboard_data = prepare_leaderboard_data(eval_dir, tasks, use_case, models, min_num_samples, model_cols = None)
         if df_leaderboard is None:
             return {"error": "Could not prepare leaderboard. Check eval directory and format."}
 
