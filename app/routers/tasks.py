@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from task_config import TASK_CONFIG
+from task_config import TASK_CONFIG, PREFERRED_BENCHMARKS
 from task_stats import _load_dataset, sanitize_floats, get_supported_tasks, get_task_num_samples_from_config, get_accuracy_results_score, get_sample_path_by_task, get_results_path_by_task, compare_responses_across_models, connect_mongodb, prepare_leaderboard_data, get_supported_use_cases, get_use_case_weights, calculate_use_case_score
 from typing import Union, List
 
@@ -18,6 +18,10 @@ def get_task_config():
 def list_tasks():
     tasks = get_supported_tasks()
     return {"tasks": tasks}
+
+@router.get("/preferred_tasks")
+def list_preferred_tasks():
+    return {"tasks": PREFERRED_BENCHMARKS}
 
 @router.get("/num_samples")
 def get_task_samples(task_name: str, limit: Union[int, float, None]=None):
