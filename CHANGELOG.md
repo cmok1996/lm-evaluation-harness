@@ -31,6 +31,9 @@
 
 
 -----------------------------------------
+# add preferred benchmarks api 7-10-2025
+1. add preferred benchmarks for each category
+
 # update get_usecase_score api 6-10-2025
 1. update get_usecase_score to be more flexible and return leaderboard pivot table directly
 

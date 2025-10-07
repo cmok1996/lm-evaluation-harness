@@ -447,7 +447,7 @@ TASK_CONFIG = {
 PREFERRED_BENCHMARKS = {
     "general_knowledge": "mmlu_generative",
     "commonsense": "wingogrande_gen",
-    "comprehension": "drop_new",
+    "comprehension": "swde",
     "multistep_reasoning": "bbh_fewshot_subset",
     "alignment": "ifeval",
     "coding": "humaneval",
