@@ -31,6 +31,9 @@
 
 
 -----------------------------------------
+# fix get_usecase_score api 13-10-2025
+1. fix get_usecase_score api
+
 # add preferred benchmarks api 7-10-2025
 1. add preferred benchmarks for each category
 
